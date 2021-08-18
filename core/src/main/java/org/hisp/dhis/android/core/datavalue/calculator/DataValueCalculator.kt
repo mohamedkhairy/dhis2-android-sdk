@@ -28,11 +28,15 @@
 
 package org.hisp.dhis.android.core.datavalue.calculator
 
+import android.util.Log
 import dagger.Reusable
 import org.hisp.dhis.android.core.arch.db.querybuilders.internal.WhereClauseBuilder
+import org.hisp.dhis.android.core.arch.helpers.DateUtils
 import org.hisp.dhis.android.core.common.AggregationType
+import org.hisp.dhis.android.core.datavalue.DataValue
 import org.hisp.dhis.android.core.datavalue.DataValueTableInfo
 import org.hisp.dhis.android.core.datavalue.internal.DataValueStore
+import org.hisp.dhis.android.core.user.UserCredentialsTableInfo
 import java.util.*
 import javax.inject.Inject
 
@@ -48,27 +52,81 @@ import javax.inject.Inject
  *
  */
 @Reusable
-class DataValueCalculator @Inject constructor() {
+class DataValueCalculator @Inject constructor(private val dataValueStore: DataValueStore): CalculatorOperation() {
+
+    private var listOfDataValue: MutableList<DataValue>? = null
+    private var aggregationTypes: AggregationType = AggregationType.SUM
+
 
     /**
      * Filter the dataValues whose dataElement match exactly this parameter
      */
-    fun withDataElement(dataElement: String): DataValueCalculator = TODO()
+    fun withDataElement(dataElement: String): DataValueCalculator =
+        apply {
 
+            val whereClause = WhereClauseBuilder()
+                .appendKeyStringValue(DataValueTableInfo.Columns.DATA_ELEMENT, dataElement)
+                .build()
+
+            listOfDataValue?.let{ list ->
+                list.filter { it.dataElement() == dataElement }.applyChanges()
+            } ?:
+            dataValueStore.selectWhere(whereClause).applyChanges()
+
+        }
     /**
      * Filter the dataValues whose period match exactly this parameter
      */
-    fun withPeriod(period: String): DataValueCalculator = TODO()
+    fun withPeriod(period: String): DataValueCalculator =
+        apply {
+            val whereClause = WhereClauseBuilder()
+                .appendKeyStringValue(DataValueTableInfo.Columns.PERIOD, period)
+                .build()
+
+            listOfDataValue?.let{ list ->
+                val result = list.filter { it.period() == period }
+                if (result.isNotEmpty()){
+                    result.applyChanges()
+                }else
+                    dataValueStore.selectWhere(whereClause).applyChanges()
+            } ?:
+            dataValueStore.selectWhere(whereClause).applyChanges()
+
+        }
 
     /**
      * Filter the dataValues whose categoryOptionCombo match exactly this parameter
      */
-    fun withCategoryOptionCombo(coc: String): DataValueCalculator = TODO()
+    fun withCategoryOptionCombo(coc: String): DataValueCalculator =
+        apply {
+            val whereClause = WhereClauseBuilder()
+                .appendKeyStringValue(DataValueTableInfo.Columns.CATEGORY_OPTION_COMBO, coc)
+                .build()
+
+            listOfDataValue?.let{ list ->
+                list.filter { it.categoryOptionCombo() == coc }.applyChanges()
+            } ?:
+            dataValueStore.selectWhere(whereClause).applyChanges()
+        }
 
     /**
      * Filter the dataValues whose created date is after this parameter.
      */
-    fun withCreatedAfter(date: Date): DataValueCalculator = TODO()
+    fun withCreatedAfter(date: Date): DataValueCalculator =
+        apply {
+
+            val dateString = DateUtils.DATE_FORMAT.format(date)
+
+            val whereClause = WhereClauseBuilder()
+                .appendKeyGreaterThanStringValue(DataValueTableInfo.Columns.CREATED, dateString)
+                .build()
+
+            listOfDataValue?.let{ list ->
+                list.filter { it.created()!!.after(date)}.applyChanges()
+            } ?:
+            dataValueStore.selectWhere(whereClause).applyChanges()
+        }
+
 
     /**
      * Accepted aggregationTypes:
@@ -80,13 +138,106 @@ class DataValueCalculator @Inject constructor() {
      * If the user does not provide an aggregation type or the aggregation type is not accepted, it must default
      * to [AggregationType.SUM]
      */
-    fun withAggregationType(type: AggregationType): DataValueCalculator = TODO()
+    fun withAggregationType(type: AggregationType): DataValueCalculator =
+        apply {
+            aggregationTypes = type
+        }
 
     /**
      * It must return the evaluation of the existing data values using the parameters provided.
      * If there is no matching dataValues, it must return a 0.0.
      * If any value cannot be converted to float, it must return a 0.0.
      */
-    fun evaluate(): Float = TODO()
+    fun evaluate(): Float {
 
+        listOfDataValue ?: dataValueStore.selectAll().applyChanges()
+
+        return when (aggregationTypes) {
+            AggregationType.SUM -> {
+                add(listOfDataValue)
+            }
+            AggregationType.AVERAGE -> {
+                average(listOfDataValue)
+            }
+            AggregationType.MAX -> {
+                max(listOfDataValue)
+            }
+            AggregationType.MIN -> {
+                min(listOfDataValue)
+            }
+            else -> {
+                add(listOfDataValue)
+            }
+        }
+
+    }
+
+    private fun List<DataValue>?.applyChanges(){
+        listOfDataValue = null
+        this?.let { listOfDataValue = it.toMutableList() }
+    }
+
+    override fun clear() {
+        listOfDataValue = null
+        aggregationTypes = AggregationType.SUM
+    }
+
+
+}
+
+abstract class CalculatorOperation{
+
+    abstract fun clear()
+
+     fun add(dataList: List<DataValue>?): Float{
+        var result = 0f
+        var floatValue = 0f
+         dataList?.forEach { dataValue ->
+            try {
+                floatValue = dataValue.value()?.toFloat()!!
+            }catch (e: Exception){
+                return 0f
+            }
+            result += floatValue
+        }
+         clear()
+        return result
+    }
+
+     fun average(dataList: List<DataValue>?): Float{
+        var result = 0f
+        var floatValue = 0f
+        val total = dataList?.size ?: 1
+         dataList?.forEach { dataValue ->
+            try {
+                floatValue = dataValue.value()?.toFloat()!!
+            }catch (e: Exception){
+                return 0f
+            }
+            result += floatValue
+        }
+
+         clear()
+         return result / total
+    }
+
+     fun max(dataList: List<DataValue>?): Float{
+        return try {
+            val maxValue = dataList?.maxBy { it.value()!!.toFloat() }
+            clear()
+            maxValue?.value()?.toFloat() ?: 0f
+        }catch (e: Exception){
+            return 0f
+        }
+    }
+
+     fun min(dataList: List<DataValue>?): Float{
+        return try {
+            val maxValue = dataList?.minBy { it.value()!!.toFloat() }
+            clear()
+            maxValue?.value()?.toFloat() ?: 0f
+        }catch (e: Exception){
+            return 0f
+        }
+    }
 }

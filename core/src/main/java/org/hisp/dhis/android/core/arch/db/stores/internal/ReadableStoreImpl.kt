@@ -28,6 +28,7 @@
 package org.hisp.dhis.android.core.arch.db.stores.internal
 
 import android.database.Cursor
+import android.util.Log
 import java.util.ArrayList
 import java.util.HashMap
 import org.hisp.dhis.android.core.arch.db.access.DatabaseAdapter
@@ -49,6 +50,7 @@ internal open class ReadableStoreImpl<O : CoreObject>(
 
     override fun selectWhere(whereClause: String): List<O> {
         val query = builder.selectWhere(whereClause)
+//        Log.d("xxx que" , "$query")
         return selectRawQuery(query)
     }
 

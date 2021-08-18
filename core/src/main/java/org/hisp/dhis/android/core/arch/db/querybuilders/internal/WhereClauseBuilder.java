@@ -38,6 +38,8 @@ public class WhereClauseBuilder {
     private static final String GREATER_OR_EQ_STR = " >= '";
     private static final String LESS_THAN_OR_EQ_STR = " <= '";
     private static final String LESS_THAN_STR = " < '";
+    private static final String GREATER_THAN_STR = " > '";
+
     private static final String EQ_STR = " = '";
     private static final String NOT_EQ_STR = " != '";
     private static final String LIKE_STR = " LIKE '";
@@ -79,6 +81,10 @@ public class WhereClauseBuilder {
 
     public WhereClauseBuilder appendKeyLessThanStringValue(String column, Object value) {
         return appendKeyValue(column, value, AND, LESS_THAN_STR, END_STR);
+    }
+
+    public WhereClauseBuilder appendKeyGreaterThanStringValue(String column, Object value) {
+        return appendKeyValue(column, value, AND, GREATER_THAN_STR, END_STR);
     }
 
     public WhereClauseBuilder appendOrKeyStringValue(String column, Object value) {

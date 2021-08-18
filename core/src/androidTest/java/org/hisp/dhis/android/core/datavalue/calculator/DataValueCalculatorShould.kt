@@ -16,7 +16,7 @@ class DataValueCalculatorShould : BaseMockIntegrationTestFullDispatcher() {
         val result = d2.dataValueModule().calculator()
             .evaluate()
 
-        assertThat(result).isEqualTo(57.0)
+        assertThat(result).isEqualTo(57.0f)
     }
 
     @Test
@@ -25,7 +25,7 @@ class DataValueCalculatorShould : BaseMockIntegrationTestFullDispatcher() {
             .withDataElement("g9eOBujte1U")
             .evaluate()
 
-        assertThat(result).isEqualTo(57.0)
+        assertThat(result).isEqualTo(57.0f)
     }
 
     @Test
@@ -34,7 +34,7 @@ class DataValueCalculatorShould : BaseMockIntegrationTestFullDispatcher() {
             .withDataElement("non-existing-uid")
             .evaluate()
 
-        assertThat(emptyResult).isEqualTo(0.0)
+        assertThat(emptyResult).isEqualTo(0.0f)
     }
 
     @Test
@@ -43,7 +43,7 @@ class DataValueCalculatorShould : BaseMockIntegrationTestFullDispatcher() {
             .withPeriod("201907")
             .evaluate()
 
-        assertThat(result).isEqualTo(24.0)
+        assertThat(result).isEqualTo(24.0f)
     }
 
     @Test
@@ -53,7 +53,7 @@ class DataValueCalculatorShould : BaseMockIntegrationTestFullDispatcher() {
             .withCategoryOptionCombo("Gmbgme7z9BF")
             .evaluate()
 
-        assertThat(result).isEqualTo(12.0)
+        assertThat(result).isEqualTo(12.0f)
     }
 
     @Test
@@ -62,7 +62,7 @@ class DataValueCalculatorShould : BaseMockIntegrationTestFullDispatcher() {
             .withAggregationType(AggregationType.AVERAGE)
             .evaluate()
 
-        assertThat(result).isEqualTo(11.4)
+        assertThat(result).isEqualTo(11.4f)
     }
 
     @Test
@@ -71,7 +71,7 @@ class DataValueCalculatorShould : BaseMockIntegrationTestFullDispatcher() {
             .withCreatedAfter(DateUtils.DATE_FORMAT.parse("2012-01-01T00:00:00.000+0000"))
             .evaluate()
 
-        assertThat(result).isEqualTo(35.0)
+        assertThat(result).isEqualTo(35.0f)
     }
 
     @Test
@@ -81,6 +81,6 @@ class DataValueCalculatorShould : BaseMockIntegrationTestFullDispatcher() {
             .withPeriod("2018")
             .evaluate()
 
-        assertThat(result).isEqualTo(10.0)
+        assertThat(result).isEqualTo(10.0f)
     }
 }
